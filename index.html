@@ -48,6 +48,8 @@
 
       touch-action: manipulation;
 
+		visibility: hidden;
+
     }
 
 
@@ -307,7 +309,7 @@ animation-delay: 1s;
 
   >
 	<div id="tapTextOverlay">
-  <p>What will Baby Williams be?</p>
+  <p id="tapQuestionText"></p>
 </div>
 	
 
@@ -324,9 +326,9 @@ animation-delay: 1s;
 </video>
 	
 <div id="endTextOverlay">
-  <h1>Baby Williams</h1>
-  <h2>COMING THIS SEPTEMBER</h2>
-  <p>We can’t wait to meet you!</p>
+<h1 id="babyNameText"></h1>
+<h2 id="dueDateText"></h2>
+<p id="messageText"></p>
 </div>
 
 	<div id="ultrasoundFrame">
@@ -340,7 +342,7 @@ animation-delay: 1s;
 </div>
 
 
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
   const stage = document.getElementById('stage');
@@ -352,7 +354,19 @@ animation-delay: 1s;
 
 const ultrasoundFrame = document.getElementById('ultrasoundFrame');
   const video = document.getElementById('revealVideo');
+const babyNameText = document.getElementById('babyNameText');
+const dueDateText = document.getElementById('dueDateText');
+const messageText = document.getElementById('messageText');
+	const tapQuestionText = document.getElementById('tapQuestionText');
+const ultrasoundImage = document.getElementById('ultrasoundImage');
 
+const SUPABASE_URL = "https://bfzhvulpymbqzwxorzih.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_aLj5jota1g3icfvF7MROIQ_b4-yKlo3";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 
   async function start() {
@@ -416,10 +430,45 @@ video.addEventListener('ended', async () => {
   ultrasoundFrame.style.display = 'block';
 });
 	
+async function loadReveal() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
 
+  if (!id) {
+    stage.style.visibility = 'visible';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("gender-design1")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    console.error("Reveal not found", error);
+    stage.style.visibility = 'visible';
+    return;
+  }
+
+  babyNameText.textContent = data.baby_name || "";
+  tapQuestionText.textContent = data.baby_name
+    ? `What will ${data.baby_name} be?`
+    : "";
+
+  dueDateText.textContent = data.due_date || "";
+  messageText.textContent = data.message || "";
+
+  if (data.ultrasound_url) {
+    ultrasoundImage.src = data.ultrasound_url;
+  }
+
+  stage.style.visibility = 'visible';
+}
+
+loadReveal();
   // Start video on first tap
-
-  stage.addEventListener('pointerup', start, { once: true });
+stage.addEventListener('pointerup', start, { once: true });
 
 </script>
 
